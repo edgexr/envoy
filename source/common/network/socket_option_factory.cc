@@ -140,6 +140,15 @@ std::unique_ptr<Socket::Options> SocketOptionFactory::buildReusePortOptions() {
   return options;
 }
 
+std::unique_ptr<Socket::Options> SocketOptionFactory::buildTosForwardOptions() {
+  ENVOY_LOG_MISC(warn, "tos factory called"); 
+  printf("nuild tos factory called");
+  std::unique_ptr<Socket::Options> options = std::make_unique<Socket::Options>();
+  options->push_back(std::make_shared<Network::SocketOptionImpl>(
+      envoy::config::core::v3::SocketOption::STATE_PREBIND, ENVOY_SOCKET_SO_RECVTOS, 1));
+  return options;
+}
+
 std::unique_ptr<Socket::Options> SocketOptionFactory::buildUdpGroOptions() {
   std::unique_ptr<Socket::Options> options = std::make_unique<Socket::Options>();
   options->push_back(std::make_shared<SocketOptionImpl>(

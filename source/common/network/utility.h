@@ -50,7 +50,8 @@ public:
    */
   virtual void processPacket(Address::InstanceConstSharedPtr local_address,
                              Address::InstanceConstSharedPtr peer_address,
-                             Buffer::InstancePtr buffer, MonotonicTime receive_time) PURE;
+                             Buffer::InstancePtr buffer, MonotonicTime receive_time,
+                             const unsigned int tos = 0) PURE;
 
   /**
    * Called whenever datagrams are dropped due to overflow or truncation.
@@ -83,6 +84,7 @@ struct ResolvedUdpSocketConfig {
 
   uint64_t max_rx_datagram_size_;
   bool prefer_gro_;
+  bool tos_;
 };
 
 /**
@@ -330,10 +332,12 @@ public:
    */
   static Api::IoCallUint64Result writeToSocket(IoHandle& handle, Buffer::RawSlice* slices,
                                                uint64_t num_slices, const Address::Ip* local_ip,
-                                               const Address::Instance& peer_address);
+                                               const Address::Instance& peer_address,
+                                               const unsigned int tos = 0);
   static Api::IoCallUint64Result writeToSocket(IoHandle& handle, const Buffer::Instance& buffer,
                                                const Address::Ip* local_ip,
-                                               const Address::Instance& peer_address);
+                                               const Address::Instance& peer_address,
+                                               const unsigned int tos = 0);
 
   /**
    * Read a packet from a given UDP socket and pass the packet to given UdpPacketProcessor.

@@ -330,6 +330,7 @@ public:
   }
   bool bindToPort() const override { return bind_to_port_; }
   bool mptcpEnabled() { return mptcp_enabled_; }
+  bool enableTosForward() { return enable_tos_forward_; }
   bool handOffRestoredDestinationConnections() const override {
     return hand_off_restored_destination_connections_;
   }
@@ -463,6 +464,7 @@ private:
   std::vector<Network::ListenSocketFactoryPtr> socket_factories_;
   const bool bind_to_port_;
   const bool mptcp_enabled_;
+  const bool enable_tos_forward_;
   const bool hand_off_restored_destination_connections_;
   const uint32_t per_connection_buffer_limit_bytes_;
   const uint64_t listener_tag_;

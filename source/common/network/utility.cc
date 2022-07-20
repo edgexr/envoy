@@ -495,18 +495,20 @@ Utility::protobufAddressSocketType(const envoy::config::core::v3::Address& proto
 
 Api::IoCallUint64Result Utility::writeToSocket(IoHandle& handle, const Buffer::Instance& buffer,
                                                const Address::Ip* local_ip,
-                                               const Address::Instance& peer_address) {
+                                               const Address::Instance& peer_address,
+                                               const unsigned int tos) {
   Buffer::RawSliceVector slices = buffer.getRawSlices();
-  return writeToSocket(handle, slices.data(), slices.size(), local_ip, peer_address);
+  return writeToSocket(handle, slices.data(), slices.size(), local_ip, peer_address, tos);
 }
 
 Api::IoCallUint64Result Utility::writeToSocket(IoHandle& handle, Buffer::RawSlice* slices,
                                                uint64_t num_slices, const Address::Ip* local_ip,
-                                               const Address::Instance& peer_address) {
+                                               const Address::Instance& peer_address,
+                                               const unsigned int tos) {
   Api::IoCallUint64Result send_result(
       /*rc=*/0, /*err=*/Api::IoErrorPtr(nullptr, IoSocketError::deleteIoError));
   do {
-    send_result = handle.sendmsg(slices, num_slices, 0, local_ip, peer_address);
+    send_result = handle.sendmsg(slices, num_slices, 0, local_ip, peer_address, tos);
   } while (!send_result.ok() &&
            // Send again if interrupted.
            send_result.err_->getErrorCode() == Api::IoError::IoErrorCode::Interrupt);
@@ -524,7 +526,8 @@ Api::IoCallUint64Result Utility::writeToSocket(IoHandle& handle, Buffer::RawSlic
 void passPayloadToProcessor(uint64_t bytes_read, Buffer::InstancePtr buffer,
                             Address::InstanceConstSharedPtr peer_addess,
                             Address::InstanceConstSharedPtr local_address,
-                            UdpPacketProcessor& udp_packet_processor, MonotonicTime receive_time) {
+                            UdpPacketProcessor& udp_packet_processor, MonotonicTime receive_time,
+                            const unsigned int tos = 0) {
   RELEASE_ASSERT(
       peer_addess != nullptr,
       fmt::format("Unable to get remote address on the socket bount to local address: {} ",
@@ -536,7 +539,7 @@ void passPayloadToProcessor(uint64_t bytes_read, Buffer::InstancePtr buffer,
                              "{}",
                              peer_addess->asString(), local_address->asString(), bytes_read));
   udp_packet_processor.processPacket(std::move(local_address), std::move(peer_addess),
-                                     std::move(buffer), receive_time);
+                                     std::move(buffer), receive_time, tos);
 }
 
 Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
@@ -567,9 +570,10 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
 
     // Skip gso segmentation and proceed as a single payload.
     if (gso_size == 0u) {
-      passPayloadToProcessor(
-          result.return_value_, std::move(buffer), std::move(output.msg_[0].peer_address_),
-          std::move(output.msg_[0].local_address_), udp_packet_processor, receive_time);
+      passPayloadToProcessor(result.return_value_, std::move(buffer),
+                             std::move(output.msg_[0].peer_address_),
+                             std::move(output.msg_[0].local_address_), udp_packet_processor,
+                             receive_time, output.msg_[0].tos_);
       return result;
     }
 
@@ -581,7 +585,8 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
       Buffer::InstancePtr sub_buffer = std::make_unique<Buffer::OwnedImpl>();
       sub_buffer->move(*buffer, bytes_to_copy);
       passPayloadToProcessor(bytes_to_copy, std::move(sub_buffer), output.msg_[0].peer_address_,
-                             output.msg_[0].local_address_, udp_packet_processor, receive_time);
+                             output.msg_[0].local_address_, udp_packet_processor, receive_time,
+                             output.msg_[0].tos_);
     }
 
     return result;
@@ -634,7 +639,8 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
       buffers[i].reservation_.commit(std::min(max_rx_datagram_size, msg_len));
 
       passPayloadToProcessor(msg_len, std::move(buffers[i].buffer_), output.msg_[i].peer_address_,
-                             output.msg_[i].local_address_, udp_packet_processor, receive_time);
+                             output.msg_[i].local_address_, udp_packet_processor, receive_time,
+                             output.msg_[i].tos_);
     }
     return result;
   }
@@ -652,9 +658,10 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
 
   ENVOY_LOG_MISC(trace, "recvmsg bytes {}", result.return_value_);
 
-  passPayloadToProcessor(
-      result.return_value_, std::move(buffer), std::move(output.msg_[0].peer_address_),
-      std::move(output.msg_[0].local_address_), udp_packet_processor, receive_time);
+  passPayloadToProcessor(result.return_value_, std::move(buffer),
+                         std::move(output.msg_[0].peer_address_),
+                         std::move(output.msg_[0].local_address_), udp_packet_processor,
+                         receive_time, output.msg_[0].tos_);
   return result;
 }
 
@@ -712,10 +719,15 @@ ResolvedUdpSocketConfig::ResolvedUdpSocketConfig(
     const envoy::config::core::v3::UdpSocketConfig& config, bool prefer_gro_default)
     : max_rx_datagram_size_(PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, max_rx_datagram_size,
                                                             DEFAULT_UDP_MAX_DATAGRAM_SIZE)),
-      prefer_gro_(PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, prefer_gro, prefer_gro_default)) {
+      prefer_gro_(PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, prefer_gro, prefer_gro_default)),
+      tos_(PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, enable_tos_forward, true)) {
   if (prefer_gro_ && !Api::OsSysCallsSingleton::get().supportsUdpGro()) {
     ENVOY_LOG_MISC(
         warn, "GRO requested but not supported by the OS. Check OS config or disable prefer_gro.");
+  }
+  if (tos_) {
+    ENVOY_LOG_MISC(
+        debug, "TOS is enabled on the proto side.");
   }
 }
 
