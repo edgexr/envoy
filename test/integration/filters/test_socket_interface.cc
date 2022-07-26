@@ -16,7 +16,8 @@ namespace Network {
 Api::IoCallUint64Result TestIoSocketHandle::sendmsg(const Buffer::RawSlice* slices,
                                                     uint64_t num_slice, int flags,
                                                     const Address::Ip* self_ip,
-                                                    const Address::Instance& peer_address) {
+                                                    const Address::Instance& peer_address,
+                                                    const unsigned int tos) {
   if (write_override_) {
     peer_address_override_ = peer_address;
     auto result = write_override_(this, slices, num_slice);

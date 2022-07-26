@@ -279,7 +279,8 @@ Api::IoCallUint64Result VclIoHandle::recv(void* buffer, size_t length, int flags
 
 Api::IoCallUint64Result VclIoHandle::sendmsg(const Buffer::RawSlice* slices, uint64_t num_slice,
                                              int, const Envoy::Network::Address::Ip*,
-                                             const Envoy::Network::Address::Instance&) {
+                                             const Envoy::Network::Address::Instance&,
+                                             const unsigned int) {
   if (!VCL_SH_VALID(sh_)) {
     return vclCallResultToIoCallResult(VPPCOM_EBADFD);
   }

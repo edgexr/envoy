@@ -31,7 +31,8 @@ public:
   MOCK_METHOD(Api::IoCallUint64Result, write, (Buffer::Instance & buffer));
   MOCK_METHOD(Api::IoCallUint64Result, sendmsg,
               (const Buffer::RawSlice* slices, uint64_t num_slice, int flags,
-               const Address::Ip* self_ip, const Address::Instance& peer_address));
+               const Address::Ip* self_ip, const Address::Instance& peer_address,
+               const unsigned int tos));
   MOCK_METHOD(Api::IoCallUint64Result, recvmsg,
               (Buffer::RawSlice * slices, const uint64_t num_slice, uint32_t self_port,
                RecvMsgOutput& output));

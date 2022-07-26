@@ -39,7 +39,8 @@ public:
   Api::IoCallUint64Result recv(void* buffer, size_t length, int flags) override;
   Api::IoCallUint64Result sendmsg(const Buffer::RawSlice* slices, uint64_t num_slice, int flags,
                                   const Envoy::Network::Address::Ip* self_ip,
-                                  const Envoy::Network::Address::Instance& peer_address) override;
+                                  const Envoy::Network::Address::Instance& peer_address,
+                                  const unsigned int tos) override;
   Api::IoCallUint64Result recvmsg(Buffer::RawSlice* slices, const uint64_t num_slice,
                                   uint32_t self_port, RecvMsgOutput& output) override;
   Api::IoCallUint64Result recvmmsg(RawSliceArrays& slices, uint32_t self_port,
