@@ -26,7 +26,7 @@ Api::IoCallUint64Result TestIoSocketHandle::sendmsg(const Buffer::RawSlice* slic
       return std::move(result).value();
     }
   }
-  return Test::IoSocketHandlePlatformImpl::sendmsg(slices, num_slice, flags, self_ip, peer_address);
+  return Test::IoSocketHandlePlatformImpl::sendmsg(slices, num_slice, flags, self_ip, peer_address, tos);
 }
 Api::IoCallUint64Result TestIoSocketHandle::writev(const Buffer::RawSlice* slices,
                                                    uint64_t num_slice) {

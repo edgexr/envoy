@@ -57,12 +57,12 @@ public:
   Api::IoCallUint64Result sendmsg(const Buffer::RawSlice* slices, uint64_t num_slice, int flags,
                                   const Envoy::Network::Address::Ip* self_ip,
                                   const Network::Address::Instance& peer_address,
-                                  unsigned int) override {
+                                  unsigned int tos) override {
     if (closed_) {
       return Api::IoCallUint64Result(0, Api::IoErrorPtr(new Network::IoSocketError(EBADF),
                                                         Network::IoSocketError::deleteIoError));
     }
-    return io_handle_.sendmsg(slices, num_slice, flags, self_ip, peer_address);
+    return io_handle_.sendmsg(slices, num_slice, flags, self_ip, peer_address, tos);
   }
   Api::IoCallUint64Result recvmsg(Buffer::RawSlice* slices, const uint64_t num_slice,
                                   uint32_t self_port, RecvMsgOutput& output) override {

@@ -143,7 +143,7 @@ TEST_P(SocketInterfaceIntegrationTest, UdpSendToInternalAddressWithSocketInterfa
 
   auto slice = reservation.slice();
   auto result =
-      socket->ioHandle().sendmsg(&slice, 1, 0, local_valid_address->ip(), *peer_internal_address);
+      socket->ioHandle().sendmsg(&slice, 1, 0, local_valid_address->ip(), *peer_internal_address, /*tos=*/0);
   ASSERT_FALSE(result.ok());
   ASSERT_EQ(result.err_->getErrorCode(), Api::IoError::IoErrorCode::NoSupport);
 }
